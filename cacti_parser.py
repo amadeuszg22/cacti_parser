@@ -1,11 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import urllib3
 from bs4 import BeautifulSoup
 import requests
 import re
 import time
-
+from datetime import datetime, timedelta
+import csv
+import pandas as pd
+import io
 
 class config:
         host = 'wanreporting.ch.pmi'
@@ -16,6 +19,8 @@ class config:
         countries = {}
         regions  = {}
         services = {}
+        graphids = []
+
 
 def cacti_scrap():
         #try:
@@ -47,15 +52,39 @@ def cacti_scrap():
         return
 
 def graph_scrap(host,link):
-        print host
-        print link
+        print (host)
+        print (link)
         page = requests.get('http://'+config.host+'/cacti/'+link)
         soup = BeautifulSoup(page.content, features="html.parser")
         find = soup.find_all('a')
+        #print find[1]
+        csvm = re.compile('^(<a href="graph_xport)')
+        hrefs = []
         for a in find:
-                print a
-                time.sleep(1)
+                hrefs.append(str(a))
+                for c in hrefs:
+                        if csvm.match(c):
+                                id = re.findall(r'[-\d]+', c)
+                                if id[0] not in config.graphids:
+                                        config.graphids.append(id[0])
+        print (config.graphids)
+        tdag = (datetime.now() - timedelta(days=1)).timestamp()
+        tnw = datetime.now().timestamp()
+        tp = str(int(tdag))
+        tn = str(int(tnw))
+        for item in config.graphids:
+                request = requests.get('http://'+config.host+'/cacti/graph_xport.php?local_graph_id='+item+'&rra_id=0&view_type=tree&graph_start='+tp+'&graph_end='+tn)
+                decoded = request.content.decode('utf-8')
+                cs = csv.DictReader(decoded, delimiter=',')
+                #print (list(cs))
+                writer = csv.writer(open('./csv/'+host+item+'.csv', 'w'))
+                for r in cs:
+                        print (r['Title:'])  #('t'.join(r['Title:']))
+                        writer.writerow(r)
+                        time.sleep(1)
+
 
 cacti_scrap()
-graph_scrap('PKRK2465',config.links['PKRK2465'])
+graph_scrap('PKRK4591',config.links['PKRK4591'])
 print (len(config.links))
+
