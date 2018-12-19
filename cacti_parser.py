@@ -68,23 +68,25 @@ def graph_scrap(host,link):
                                 if id[0] not in config.graphids:
                                         config.graphids.append(id[0])
         print (config.graphids)
-        tdag = (datetime.now() - timedelta(days=1)).timestamp()
+        tdag = (datetime.now() - timedelta(days=365)).timestamp()
         tnw = datetime.now().timestamp()
         tp = str(int(tdag))
         tn = str(int(tnw))
         for item in config.graphids:
                 request = requests.get('http://'+config.host+'/cacti/graph_xport.php?local_graph_id='+item+'&rra_id=0&view_type=tree&graph_start='+tp+'&graph_end='+tn)
                 decoded = request.content.decode('utf-8')
-                cs = csv.DictReader(decoded, delimiter=',')
-                #print (list(cs))
-                writer = csv.writer(open('./csv/'+host+item+'.csv', 'w'))
-                for r in cs:
-                        print (r['Title:'])  #('t'.join(r['Title:']))
-                        writer.writerow(r)
-                        time.sleep(1)
+                string = ("".join(decoded)).split('\n')
+                filed = './csv/'+host+item+'.csv'
+                file = open(filed,'w')
+                file.write(decoded)
+                for x in string:
+                        print (x)
+                #       time.sleep(1)
+                file.close()
+
 
 
 cacti_scrap()
-graph_scrap('PKRK4591',config.links['PKRK4591'])
+graph_scrap('PQLS487',config.links['PQLS487'])
 print (len(config.links))
 
